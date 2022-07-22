@@ -32,9 +32,11 @@ const urlShortner = async function (req, res) {
         if (!validUrl.isUri(baseUrl)) {
             return res.status(401).send({ status: false, message: "Invalid base URL" })
         }
-
         const urlCode = shortid.generate()
-        if (validUrl.isUri(longUrl)) {
+        // isHttpUri(value)
+        if (!validUrl.isUri(longUrl)) {return res.status(400).send({status:false, message:"Enter the valid longUrl"})}
+       
+        if (validUrl.isHttpUri(longUrl)) {
             // checks for data in the cache
             let newUrl = await GET_ASYNC(`${longUrl}`)
             if (newUrl) return res.status(409).send({ status: true, message: "Url already shortened", data: JSON.parse(newUrl) })
