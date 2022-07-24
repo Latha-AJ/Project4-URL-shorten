@@ -28,15 +28,29 @@ const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 const urlShortner = async function (req, res) {
     try {
         let { longUrl } = req.body;
+        longUrl = longUrl.trim()
+
         if (!longUrl) return res.status(400).send({ status: false, message: "please enter the url" });
-        if (!validUrl.isUri(baseUrl)) {
+         if (!validUrl.isUri(baseUrl)) {
             return res.status(401).send({ status: false, message: "Invalid base URL" })
-        }
-        const urlCode = shortid.generate()
-        // isHttpUri(value)
-        if (!validUrl.isUri(longUrl)) {return res.status(400).send({status:false, message:"Enter the valid longUrl"})}
-       
-        if (validUrl.isHttpUri(longUrl)) {
+                    }
+
+         if(!(longUrl.includes("//"))) {return res.status(400).send({status:false, message:"Invalid Url"})} 
+         
+         const urlParts= longUrl.split('//')
+         const scheme = urlParts[0]
+         const uri = urlParts[1]
+
+         if(!(uri.includes('.'))) {return res.status(400).send({status:false, message:"Invalid longUrl"})}
+        
+         const urlCode = shortid.generate()
+
+         const uriParts = uri.split('.')
+         
+         if(!((scheme =="http:") || (scheme =="https:"))) {return res.status(400).send({status:false, message:"Invalid longUrl(scheme)"})}
+        if(uriParts[0].trim().length == 0 || uriParts[1].trim().length==0 ) {return res.status(400).send({status:false,message:"Invalid Url(uri)"})}
+     
+        if (validUrl.isUri(longUrl)) {
             // checks for data in the cache
             let newUrl = await GET_ASYNC(`${longUrl}`)
             if (newUrl) return res.status(409).send({ status: true, message: "Url already shortened", data: JSON.parse(newUrl) })
@@ -59,7 +73,7 @@ const urlShortner = async function (req, res) {
                 await url.save()
                 let newId = url._id.toString()
                 const data = await urlModel.findById({ _id: newId }).select({ __v: 0, _id: 0 })
-                console.log(data)
+                
                 await SET_ASYNC(`${longUrl}`, JSON.stringify(data))
                 return res.status(201).send({ status: true, data: data })
             }
@@ -80,8 +94,7 @@ const getUrl = async (req, res) => {
     try {
         let urlCode = req.params.urlCode;
         if (!shortid.isValid(urlCode)) return res.status(400).send({ status: false, message: "Enter the valid UrlCode" })
-        if (!urlCode) return res.status(400).send({ status: false, message: "please enter the url" });
-
+          
         let cachedUrlCode = await GET_ASYNC(`${req.params.urlCode}`);
         if (cachedUrlCode) {
             return res.redirect(JSON.parse(cachedUrlCode))
