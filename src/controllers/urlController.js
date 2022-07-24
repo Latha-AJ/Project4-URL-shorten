@@ -53,7 +53,7 @@ const urlShortner = async function (req, res) {
         if (validUrl.isUri(longUrl)) {
             // checks for data in the cache
             let newUrl = await GET_ASYNC(`${longUrl}`)
-            if (newUrl) return res.status(409).send({ status: true, message: "Url already shortened", data: JSON.parse(newUrl) })
+            if (newUrl) return res.status(200).send({ status: true, message: "Url already shortened", data: JSON.parse(newUrl) })
 
             let url = await urlModel.findOne({ longUrl: longUrl })
             if (url) {
